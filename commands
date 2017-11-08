@@ -1,0 +1,59 @@
+#Get cpu/type and count
+Lscpu
+
+#Get uptime and load average
+uptime 
+
+#Get memory stats
+Free -h
+
+#Get Apache memory usage
+ps -ylC httpd | awk '{x += $8;y += 1} END {print "Apache Memory Usage (MB): "x/1024; print "Average Proccess 
+
+#Get highest memory consumers
+echo [PID]  [MEM]  [PATH] &&  ps aux | awk '{print $2, $4, $11}' | sort -k2rn | head -n 20
+
+#Get highest cpu consumers
+ps -eo pcpu,pid,user,args | sort -k 1 -r | head -20
+
+#Get php memory_limit and max_execution_time	
+grep -E 'memory_limit|max_execution_time' /etc/php.ini
+
+#Get mysql performance suggestions
+#Clone repo, and run tuning-primer.sh
+#https://github.com/RootService/tuning-primer
+
+#Check that syslog file count/sizes are not overrunning the system 
+ls -la /varlib/rsyslog
+ls -la /var/lib/pgsql/data/pg_log/
+
+#Get service check execution time averages
+#This measures how quickly a check command receives it's result and finishes, a high value could indicate system performance issues or network latency
+mon check exectime service
+
+#Get service check latency averages
+#This measures how quickly a check executes after it was scheduled, should be near 0, otherwise could indicate system performance issues
+mon check latency service
+
+#Get top 10 checks with highest execution_time
+mon query ls services -c execution_time,host_name,description | awk -F\; '{n = $1; printf("%.3f %s;%s\n", $1, $2, $3)}' | sort -n | tail
+
+#Get top 10 checks with highest execution_time
+mon query ls services -c latency,host_name,description | awk -F\; '{n = $1; printf("%.3f %s;%s\n", $1, $2, $3)}' | sort -n | tail
+
+#####
+#Other suggestions
+#####
+
+#Get cpu load another way
+top | head -n 1
+
+#Get volumes and their space usage
+df -h
+
+#Get volumes and their inode usage
+df -i
+
+#Get disk io information
+#Will have to be installed with yum prior to running
+iostat
