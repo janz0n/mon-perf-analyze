@@ -57,3 +57,6 @@ df -i
 #Get disk io information
 #Will have to be installed with yum prior to running
 iostat
+
+#Get number of users accessing port 443 - i.e. logged into OP5 Monitor at the moment
+netstat -an | grep 443 | grep tcp | grep -v 0.0.0.0 | grep -v ::: | cut -d':' -f2 | cut -d' ' -f12 | sort | uniq | wc -l
