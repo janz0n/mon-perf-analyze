@@ -48,6 +48,10 @@ mon query ls services -c latency,host_name,description | awk -F\; '{n = $1; prin
 #Get cpu load another way
 top | head -n 1
 
+#Merlin - Check NTP between master and poller, if problems with Active/Inactive are experienced
+#Change "hostname" to the name of the poller below and run from master
+ntpdate -q hostname
+
 #Get volumes and their space usage
 df -h
 
