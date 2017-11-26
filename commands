@@ -1,31 +1,12 @@
-#Get cpu/type and count
-Lscpu
+###
+# This file is used as a reference and reminder for commands to use when troubleshooting OP5 Monitor.
+# Although not needed frequently when questions about performance arise this can be a starting point. 
+# The file is broken up into sections specific to the components to be analyzed.
+###
 
-#Get uptime and load average
-uptime 
-
-#Get memory stats
-Free -h
-
-#Get Apache memory usage
-ps -ylC httpd | awk '{x += $8;y += 1} END {print "Apache Memory Usage (MB): "x/1024; print "Average Proccess Size (MB): "x/((y-1)*1024)}' 
-
-#Get highest memory consumers
-echo [PID]  [MEM]  [PATH] &&  ps aux | awk '{print $2, $4, $11}' | sort -k2rn | head -n 20
-
-#Get highest cpu consumers
-ps -eo pcpu,pid,user,args | sort -k 1 -r | head -20
-
-#Get php memory_limit and max_execution_time	
-grep -E 'memory_limit|max_execution_time' /etc/php.ini
-
-#Get mysql performance suggestions
-#Clone repo, and run tuning-primer.sh
-#https://github.com/RootService/tuning-primer
-
-#Check that syslog file count/sizes are not overrunning the system 
-ls -la /varlib/rsyslog
-ls -la /var/lib/pgsql/data/pg_log/
+###
+# OP5 Monitor Performance Analysis
+###
 
 #Get service check execution time averages
 #This measures how quickly a check command receives it's result and finishes, a high value could indicate system performance issues or network latency
@@ -41,16 +22,33 @@ mon query ls services -c execution_time,host_name,description | awk -F\; '{n = $
 #Get top 10 checks with highest execution_time
 mon query ls services -c latency,host_name,description | awk -F\; '{n = $1; printf("%.3f %s;%s\n", $1, $2, $3)}' | sort -n | tail
 
-#####
-#Other suggestions
-#####
+#Get number of users accessing port 443 - i.e. logged into OP5 Monitor at the moment
+netstat -an | grep 443 | grep tcp | grep -v 0.0.0.0 | grep -v ::: | cut -d':' -f2 | cut -d' ' -f12 | sort | uniq | wc -l
+
+#Consider analyzing the Apache Access logs for number of requests per (month|day|hour|second)
+http://www.inmotionhosting.com/support/website/server-usage/view-level-of-traffic-with-apache-access-log
+
+###
+# CPU, Memory and Disk Performance Analysis
+###
+
+#Get cpu/type and count
+Lscpu
+
+#Get uptime and load average
+uptime
 
 #Get cpu load another way
 top | head -n 1
 
-#Merlin - Check NTP between master and poller, if problems with Active/Inactive are experienced
-#Change "hostname" to the name of the poller below and run from master
-ntpdate -q hostname
+#Get highest cpu consumers
+ps -eo pcpu,pid,user,args | sort -k 1 -r | head -20
+
+#Get memory stats
+Free -h
+
+#Get highest memory consumers
+echo [PID]  [MEM]  [PATH] &&  ps aux | awk '{print $2, $4, $11}' | sort -k2rn | head -n 20
 
 #Get volumes and their space usage
 df -h
@@ -62,5 +60,36 @@ df -i
 #Will have to be installed with yum prior to running
 iostat
 
-#Get number of users accessing port 443 - i.e. logged into OP5 Monitor at the moment
-netstat -an | grep 443 | grep tcp | grep -v 0.0.0.0 | grep -v ::: | cut -d':' -f2 | cut -d' ' -f12 | sort | uniq | wc -l
+###
+# PHP/Apache/Mysql - Setting/Performance Analysis
+###
+
+#Get Apache memory usage
+ps -ylC httpd | awk '{x += $8;y += 1} END {print "Apache Memory Usage (MB): "x/1024; print "Average Proccess Size (MB): "x/((y-1)*1024)}' 
+
+#Get php memory_limit and max_execution_time	
+grep -E 'memory_limit|max_execution_time' /etc/php.ini
+
+#Get mysql performance suggestions
+#Clone repo, and run tuning-primer.sh
+#https://github.com/RootService/tuning-primer
+
+###
+# OP5 Monitor Syslog 
+###
+
+#Check that syslog file count/sizes are not overrunning the system 
+ls -la /varlib/rsyslog
+ls -la /var/lib/pgsql/data/pg_log/
+
+###
+# Merlin Troubleshooting
+###
+
+#Check NTP between master and poller, if problems with Active/Inactive are experienced
+#Change "hostname" to the name of the poller below and run from master
+ntpdate -q hostname
+
+#Check the response from ntpstat from OP5 Monitor servers listed with "mon node list"
+for i in `mon node list | awk '{ print $1}'`; do echo $i; /opt/plugins/check_by_ssh -E -H $i -C "ntpstat";
+
